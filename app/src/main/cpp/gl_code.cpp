@@ -46,7 +46,7 @@ auto gVertexShader =
     "attribute vec4 vPosition;\n"
     "uniform mat4 mvp;\n"
     "void main() {\n"
-    "  gl_Position = mvp*vPosition;\n"
+    "  gl_Position = vPosition*mvp;\n"
     "}\n";
 
 auto gFragmentShader =
@@ -122,6 +122,7 @@ GLuint createProgram(const char* pVertexSource, const char* pFragmentSource) {
 GLuint gProgram;
 GLuint gvPositionHandle;
 GLuint gmvpHandle;
+GLfloat aspect = 1.0f;
 
 bool setupGraphics(int w, int h) {
     printGLString("Version", GL_VERSION);
@@ -143,12 +144,13 @@ bool setupGraphics(int w, int h) {
     checkGlError("glGetUniformLocation");
 
     glViewport(0, 0, w, h);
+    aspect = (float)w/h;
     checkGlError("glViewport");
     return true;
 }
 
 const GLfloat gTriangleVertices[] = {
-        0.5f, 0.5f, -0.5f,  0.5f, -0.5f, -0.5f, -0.5, 0.5f, -0.5f, -0.5f, -0.5f, -0.5f, //First side
+        0.5f, 0.5f, -0.5f, 0.5f, -0.5f, -0.5f, -0.5, 0.5f, -0.5f, -0.5f, -0.5f, -0.5f, //First side
         -0.5f, 0.5f, 0.5f, -0.5f, -0.5f, 0.5f, //Second side
         0.5f, 0.5f, 0.5f, 0.5f, -0.5f, 0.5f, //Third side
         0.5f, 0.5f, -0.5f, 0.5f, -0.5f, -0.5f, //Fourth side
@@ -168,10 +170,17 @@ void setEulerAngles(GLfloat *m, float omega, float phi, float kappa) {
 }
 
 void setProj(GLfloat *m) {
-    m[0] = 1.f;     m[1] = 0;       m[2] = 0;       m[3] = 0;
-    m[4] = 0;       m[5] = 1.f;     m[6] = 0;       m[7] = 0;
-    m[8] = 0;       m[9] = 0;       m[10] = -1010.f/990;    m[11] = -20000/990.f;
+    m[0] = 1.f/aspect;     m[1] = 0;       m[2] = 0;       m[3] = 0;
+    m[4] = 0;       m[5] = 1.f;   m[6] = 0;       m[7] = 0;
+    m[8] = 0;       m[9] = 0;       m[10] = -201.f/199;    m[11] = -200/199.f;
     m[12] = 0;      m[13] = 0;      m[14] = -1.f;      m[15] = 0;
+}
+
+void setOrtho(GLfloat *m) {
+    m[0] = 0.1f/aspect;     m[1] = 0;       m[2] = 0;       m[3] = 0;
+    m[4] = 0;       m[5] = 0.1f;   m[6] = 0;       m[7] = 0;
+    m[8] = 0;       m[9] = 0;       m[10] = -0.1f;    m[11] = 0;
+    m[12] = 0;      m[13] = 0;      m[14] = 0;      m[15] = 1.f;
 }
 
 void setShift(GLfloat *m, GLfloat x, GLfloat y, GLfloat z) {
@@ -199,7 +208,9 @@ void renderFrame() {
     if (grey > 1.0f) {
         grey = 0.0f;
     }
-    omega += 0.02; phi += 0.03; kappa += 0.025;
+    omega += 0.02;
+    phi += 0.03;
+    kappa += 0.025;
     if(omega >= M_PI)
         omega = -M_PI;
     if(phi >= M_PI)
@@ -208,7 +219,8 @@ void renderFrame() {
         kappa = -M_PI;
     setEulerAngles(modelMat, omega, phi, kappa);
     setProj(projMat);
-    setShift(cameraMat, 0, 0, -15.5f);
+    //setOrtho(projMat);
+    setShift(cameraMat, 0.f, 0, -3.f);
     multMat(modelCam, cameraMat, modelMat);
     multMat(mvp, projMat, modelCam);
     glClearColor(grey, grey, grey, 1.0f);
